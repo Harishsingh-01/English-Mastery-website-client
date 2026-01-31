@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-deep-void font-sans antialiased overflow-x-hidden transition-colors duration-300;
+    color: rgb(var(--text-main));
+  }
+}
+
+:root {
+  /* Light Mode (Sunlight friendly) */
+  --bg-primary: 248 250 252;
+  /* Slate-50 */
+  --color-primary: 8 145 178;
+  /* Cyan-600 */
+  --color-secondary: 147 51 234;
+  /* Purple-600 */
+  --glass-bg: 255 255 255;
+  --glass-border: 0 0 0;
+  --text-main: 15 23 42;
+  /* Slate-900 */
+  --text-muted: 100 116 139;
+  /* Slate-500 */
+}
+
+.dark {
+  /* Dark Mode (Original Neon) */
+  --bg-primary: 10 10 10;
+  --color-primary: 0 243 255;
+  --color-secondary: 188 19 254;
+  --glass-bg: 10 10 10;
+  --glass-border: 255 255 255;
+  --text-main: 241 245 249;
+  /* Slate-100 */
+  --text-muted: 148 163 184;
+  /* Slate-400 */
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-glass-black/5 backdrop-blur-lg border border-glass-white/10 shadow-xl;
+  }
+
+  /* Dark mode specific override for glass panel to keep original look */
+  .dark .glass-panel {
+    @apply bg-white/5 border-white/10;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-neon-cyan to-electric-purple;
+  }
+}
