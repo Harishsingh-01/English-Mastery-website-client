@@ -18,7 +18,7 @@ const Dashboard = () => {
 
     const fetchUsage = async () => {
         try {
-            const res = await axios.get('/api/auth/usage');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/usage`);
             setUsage(res.data);
         } catch (err) {
             console.error('Failed to fetch usage', err);
@@ -32,7 +32,7 @@ const Dashboard = () => {
         setLoading(true);
         setResult(null);
         try {
-            const res = await axios.post('/api/analyze', { sentence, strictMode });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/analyze`, { sentence, strictMode });
             setResult(res.data);
             fetchStats();
         } catch (err) {
@@ -45,7 +45,7 @@ const Dashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await axios.get('/api/analyze/stats');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/analyze/stats`);
             setStats(res.data);
         } catch (err) {
             console.error(err);
@@ -67,7 +67,7 @@ const Dashboard = () => {
                 setDailyWord(JSON.parse(cached));
             } else {
                 try {
-                    const res = await axios.get('/api/daily/word');
+                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/daily/word`);
                     setDailyWord(res.data);
                     localStorage.setItem('daily_word_data', JSON.stringify(res.data));
                     localStorage.setItem('daily_word_date', today);
@@ -86,7 +86,7 @@ const Dashboard = () => {
     const handleGetExamples = async (mistakeData, idx) => {
         setExamplesLoading(idx);
         try {
-            const res = await axios.post('/api/analyze/examples', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/analyze/examples`, {
                 rule: mistakeData.rule,
                 mistake: mistakeData.mistake
             });

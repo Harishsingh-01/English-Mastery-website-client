@@ -17,7 +17,7 @@ const Mistakes = () => {
 
     const fetchMistakes = async () => {
         try {
-            const res = await axios.get('/api/mistakes');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/mistakes`);
             setMistakes(res.data);
         } catch (err) {
             console.error(err);
@@ -29,7 +29,7 @@ const Mistakes = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this mistake?')) return;
         try {
-            await axios.delete(`/api/mistakes/${id}`);
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/mistakes/${id}`);
             setMistakes(mistakes.filter(m => m._id !== id));
         } catch (err) {
             alert('Failed to delete mistake');
@@ -39,7 +39,7 @@ const Mistakes = () => {
     const handleGetExamples = async (mistake) => {
         setExamplesLoading(mistake._id);
         try {
-            const res = await axios.post('/api/analyze/examples', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/analyze/examples`, {
                 rule: mistake.rule,
                 mistake: mistake.wrongPhrase
             });

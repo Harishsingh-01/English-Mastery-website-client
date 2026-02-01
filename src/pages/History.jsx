@@ -17,7 +17,7 @@ const History = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await axios.get('/api/history');
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/history`);
             setHistory(res.data);
             setLoading(false);
         } catch (err) {

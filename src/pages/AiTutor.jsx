@@ -35,7 +35,7 @@ const AiTutor = () => {
         const history = messages.map(m => ({ role: m.role, content: m.content }));
 
         try {
-            const res = await axios.post('/api/tutor/chat', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/tutor/chat`, {
                 message: userMsg.content,
                 history: history
             });
@@ -97,8 +97,8 @@ const AiTutor = () => {
                                 </div>
 
                                 <div className={`p-4 rounded-2xl ${msg.role === 'user'
-                                        ? 'bg-glass-black/30 border border-neon-cyan/30 rounded-tr-none text-right'
-                                        : 'bg-glass-black/20 border border-glass-white/10 rounded-tl-none'
+                                    ? 'bg-glass-black/30 border border-neon-cyan/30 rounded-tr-none text-right'
+                                    : 'bg-glass-black/20 border border-glass-white/10 rounded-tl-none'
                                     }`}>
                                     <p className="text-text-main leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                                     {msg.role === 'ai' && (

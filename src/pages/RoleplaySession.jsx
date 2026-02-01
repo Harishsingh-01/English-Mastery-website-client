@@ -41,7 +41,7 @@ const RoleplaySession = () => {
         try {
             // Send only last 6 messages context
             const context = messages.slice(-6);
-            const res = await axios.post('/api/roleplay/chat', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/chat`, {
                 message: userMsg.content,
                 history: context,
                 scenario: id
@@ -57,7 +57,7 @@ const RoleplaySession = () => {
     const endSession = async () => {
         setLoading(true);
         try {
-            const res = await axios.post('/api/roleplay/feedback', {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/feedback`, {
                 history: messages,
                 scenario: location.state?.config?.title || id
             });

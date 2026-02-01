@@ -18,7 +18,7 @@ const RoleplayHub = () => {
     const startScenario = async (id) => {
         setLoading(true);
         try {
-            const res = await axios.post('/api/roleplay/start', { scenario: id });
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/start`, { scenario: id });
             // Navigate to session with initial data
             navigate(`/roleplay/${id}`, { state: { initialMessage: res.data.message, config: res.data.scenarioConfig } });
         } catch (err) {
