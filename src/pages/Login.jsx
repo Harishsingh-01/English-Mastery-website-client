@@ -58,7 +58,7 @@ const Login = () => {
                 {/* Google Login Button */}
                 <div className="mt-8">
                     <a
-                        href="/api/auth/google"
+                        href={`${import.meta.env.VITE_API_URL}/api/auth/google`}
                         className="w-full flex items-center justify-center px-4 py-3 border border-glass-white/10 rounded-lg shadow-sm text-sm font-medium text-text-main bg-glass-black/10 hover:bg-glass-black/20 transition-all text-center group"
                     >
                         <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24">
