@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import axios from 'axios';
+import api from '../utils/api';
 import { MessageSquare, Mic, Send, PlayCircle, Award, RefreshCw, Upload, Clock, FileText, ChevronRight, Plus } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 
@@ -35,7 +35,7 @@ const Interview = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interview/history`);
+            const res = await api.get('/api/interview/history');
             setSessions(res.data);
         } catch (err) {
             console.error(err);
@@ -45,7 +45,7 @@ const Interview = () => {
     const loadSession = async (id) => {
         setLoading(true);
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interview/session/${id}`);
+            const res = await api.get(`/api/interview/session/${id}`);
             setCurrentSessionId(res.data._id);
             // Transform backend messages to UI format
             const uiMessages = res.data.messages.flatMap(m => {
@@ -96,7 +96,7 @@ const Interview = () => {
         }
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interview/start`, formData, {
+            const res = await api.post('/api/interview/start', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setSessions(prev => [res.data, ...prev]);
@@ -119,7 +119,7 @@ const Interview = () => {
             // Optimistic update
             // setMessages(prev => [...prev]); 
 
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interview/question`, {
+            const res = await api.post('/api/interview/question', {
                 type,
                 sessionId: currentSessionId,
                 length
@@ -145,7 +145,7 @@ const Interview = () => {
         const lastQuestion = messages.filter(m => m.type === 'ai').pop()?.text;
 
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interview/evaluate`, {
+            const res = await api.post('/api/interview/evaluate', {
                 question: lastQuestion || 'General Context',
                 answer,
                 sessionId: currentSessionId,

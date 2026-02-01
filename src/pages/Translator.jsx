@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import axios from 'axios';
+import api from '../utils/api';
 import { ArrowRightLeft, Volume2, Copy, Check } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 
@@ -15,7 +15,7 @@ const Translator = () => {
         setLoading(true);
         try {
             const target = lang === 'en' ? 'hi' : 'en';
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/translate`, { text, targetLang: target });
+            const res = await api.post('/api/translate', { text, targetLang: target });
             setTranslation(res.data.translation);
         } catch (err) {
             console.error(err);

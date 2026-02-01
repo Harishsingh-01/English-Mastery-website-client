@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import axios from 'axios';
+import api from '../utils/api';
 import { MessageSquare, Send, Bot, User, RefreshCw, Volume2 } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 

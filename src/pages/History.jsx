@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
-import axios from 'axios';
+import api from '../utils/api';
 import { Clock, MessageSquare, Coffee, BookOpen, ChevronDown, ChevronUp, Bot } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
@@ -17,7 +17,7 @@ const History = () => {
 
     const fetchHistory = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/history`);
+            const res = await api.get('/api/history');
             setHistory(res.data);
             setLoading(false);
         } catch (err) {

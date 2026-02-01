@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import { Coffee, Stethoscope, Briefcase, Plane, ArrowRight } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const scenarios = [
     { id: 'cafe', title: 'Coffee Shop', icon: Coffee, desc: 'Order a drink and a snack.', color: 'text-orange-400', bg: 'bg-orange-400/10', border: 'border-orange-400/20' },
@@ -18,7 +18,7 @@ const RoleplayHub = () => {
     const startScenario = async (id) => {
         setLoading(true);
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/start`, { scenario: id });
+            const res = await api.post('/api/roleplay/start', { scenario: id });
             // Navigate to session with initial data
             navigate(`/roleplay/${id}`, { state: { initialMessage: res.data.message, config: res.data.scenarioConfig } });
         } catch (err) {
