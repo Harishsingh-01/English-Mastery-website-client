@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
-import { LogOut, BookOpen, BarChart2, Languages, MessageSquare, Coffee, Clock, Sun, Moon } from 'lucide-react';
+import { LogOut, BookOpen, BarChart2, Languages, MessageSquare, Coffee, Clock, Sun, Moon, Bot } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -53,6 +53,10 @@ const Navbar = () => {
                             <Link to="/history" className={linkClass('/history')}>
                                 <Clock className="w-4 h-4 mr-2" />
                                 History
+                            </Link>
+                            <Link to="/tutor" className={linkClass('/tutor')}>
+                                <Bot className="w-4 h-4 mr-2" />
+                                AI Tutor
                             </Link>
                         </div>
                     </div>

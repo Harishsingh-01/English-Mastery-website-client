@@ -23,6 +23,7 @@ import Interview from './pages/Interview';
 import RoleplayHub from './pages/RoleplayHub';
 import RoleplaySession from './pages/RoleplaySession';
 import History from './pages/History';
+import AiTutor from './pages/AiTutor';
 
 function App() {
     return (
@@ -42,6 +43,7 @@ function App() {
                                     <Route path="/roleplay/:id" element={<PrivateRoute><RoleplaySession /></PrivateRoute>} />
                                     <Route path="/mistakes" element={<PrivateRoute><Mistakes /></PrivateRoute>} />
                                     <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
+                                    <Route path="/tutor" element={<PrivateRoute><AiTutor /></PrivateRoute>} />
                                 </Routes>
 
                                 <div className="mt-10 text-center text-slate-500 text-sm font-medium opacity-50 hover:opacity-100 transition-opacity">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
-import { Clock, MessageSquare, Coffee, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, MessageSquare, Coffee, BookOpen, ChevronDown, ChevronUp, Bot } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const History = () => {
@@ -35,6 +35,7 @@ const History = () => {
             case 'practice': return <BookOpen className="w-5 h-5 text-neon-cyan" />;
             case 'interview': return <MessageSquare className="w-5 h-5 text-electric-purple" />;
             case 'roleplay': return <Coffee className="w-5 h-5 text-orange-400" />;
+            case 'tutor': return <Bot className="w-5 h-5 text-green-400" />;
             default: return <Clock className="w-5 h-5 text-slate-400" />;
         }
     };
@@ -54,7 +55,7 @@ const History = () => {
                     <p className="text-text-muted">Your entire learning timeline in one place.</p>
                 </div>
                 <div className="flex space-x-2 bg-glass-black/5 p-1 rounded-lg border border-glass-white/10">
-                    {['all', 'practice', 'interview', 'roleplay'].map(f => (
+                    {['all', 'practice', 'interview', 'roleplay', 'tutor'].map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
@@ -128,8 +129,8 @@ const History = () => {
                                         </>
                                     )}
 
-                                    {/* Interview & Roleplay Content */}
-                                    {(item.type === 'interview' || item.type === 'roleplay') && (
+                                    {/* Interview & Roleplay & Tutor Content */}
+                                    {(item.type === 'interview' || item.type === 'roleplay' || item.type === 'tutor') && (
                                         <>
                                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {item.details.messages.map((msg, idx) => (

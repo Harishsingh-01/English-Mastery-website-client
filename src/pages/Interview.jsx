@@ -152,10 +152,21 @@ const Interview = () => {
                 length
             });
 
-            setMessages(prev => [...prev, {
-                type: 'evaluation',
-                evaluation: res.data
-            }]);
+            setMessages(prev => {
+                const newMessages = [...prev, {
+                    type: 'evaluation',
+                    evaluation: res.data
+                }];
+
+                if (res.data.nextQuestion) {
+                    newMessages.push({
+                        type: 'ai',
+                        text: res.data.nextQuestion
+                    });
+                }
+
+                return newMessages;
+            });
 
             setStats(prev => ({
                 questions: prev.questions + 1,
@@ -291,12 +302,12 @@ const Interview = () => {
                         <div key={idx} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up`}>
                             {msg.type === 'ai' && (
                                 <div className="max-w-[85%] bg-glass-black/5 border border-glass-white/10 rounded-2xl p-4 rounded-tl-none">
-                                    <p className="text-text-main leading-relaxed">{msg.text}</p>
+                                    <p className="text-text-main leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
                                 </div>
                             )}
                             {msg.type === 'user' && (
                                 <div className="max-w-[85%] bg-gradient-to-r from-neon-cyan/20 to-blue-600/20 border border-neon-cyan/30 rounded-2xl p-4 rounded-tr-none">
-                                    <p className="text-white leading-relaxed">{msg.text}</p>
+                                    <p className="text-white leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
                                 </div>
                             )}
                             {msg.type === 'evaluation' && (
@@ -351,35 +362,36 @@ const Interview = () => {
                         </button>
                     </div>
 
-                    {/* Resume Modal */}
-                    {showResumeModal && (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-                            <div className="bg-bg-primary border border-glass-white/10 p-8 rounded-2xl max-w-md w-full shadow-2xl relative">
-                                <button onClick={() => setShowResumeModal(false)} className="absolute top-4 right-4 text-text-muted hover:text-text-main">✕</button>
-                                <h3 className="text-2xl font-display font-bold text-text-main mb-2">Start New Session</h3>
-                                <p className="text-text-muted mb-6 text-sm">Upload your resume for personalized questions (PDF) or skip to start generic.</p>
 
-                                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-glass-white/10 rounded-xl cursor-pointer hover:border-neon-cyan/50 hover:bg-glass-black/5 transition-all mb-6 group">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <Upload className="w-8 h-8 text-text-muted mb-2 group-hover:text-neon-cyan transition-colors" />
-                                        <p className="text-sm text-text-muted group-hover:text-text-main">{resumeFile ? resumeFile.name : 'Click to upload PDF'}</p>
-                                    </div>
-                                    <input type="file" className="hidden" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} />
-                                </label>
-
-                                <div className="flex space-x-3">
-                                    <button
-                                        onClick={startNewSession}
-                                        className="flex-1 py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all"
-                                    >
-                                        {resumeFile ? 'Start with Resume' : 'Start without Resume'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
+            {/* Resume Modal */}
+            {showResumeModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+                    <div className="bg-glass-black border border-glass-white/10 p-8 rounded-2xl max-w-md w-full shadow-2xl relative backdrop-blur-xl">
+                        <button onClick={() => setShowResumeModal(false)} className="absolute top-4 right-4 text-text-muted hover:text-text-main">✕</button>
+                        <h3 className="text-2xl font-display font-bold text-text-main mb-2">Start New Session</h3>
+                        <p className="text-text-muted mb-6 text-sm">Upload your resume for personalized questions (PDF) or skip to start generic.</p>
+
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-glass-white/10 rounded-xl cursor-pointer hover:border-neon-cyan/50 hover:bg-glass-black/5 transition-all mb-6 group">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <Upload className="w-8 h-8 text-text-muted mb-2 group-hover:text-neon-cyan transition-colors" />
+                                <p className="text-sm text-text-muted group-hover:text-text-main">{resumeFile ? resumeFile.name : 'Click to upload PDF'}</p>
+                            </div>
+                            <input type="file" className="hidden" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} />
+                        </label>
+
+                        <div className="flex space-x-3">
+                            <button
+                                onClick={startNewSession}
+                                className="flex-1 py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all"
+                            >
+                                {resumeFile ? 'Start with Resume' : 'Start without Resume'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
