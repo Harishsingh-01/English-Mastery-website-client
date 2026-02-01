@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://english-mastery-app.vercel.app/sitemap.xml
