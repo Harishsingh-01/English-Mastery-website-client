@@ -49,17 +49,17 @@ const History = () => {
             <Helmet>
                 <title>History | English Mastery</title>
             </Helmet>
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-display font-bold text-text-main mb-2">Activity History</h1>
                     <p className="text-text-muted">Your entire learning timeline in one place.</p>
                 </div>
-                <div className="flex space-x-2 bg-glass-black/5 p-1 rounded-lg border border-glass-white/10">
+                <div className="flex space-x-2 bg-glass-black/5 p-1 rounded-lg border border-glass-white/10 overflow-x-auto custom-scrollbar max-w-full sm:w-auto">
                     {['all', 'practice', 'interview', 'roleplay', 'tutor'].map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${filter === f ? 'bg-glass-black/10 text-text-main' : 'text-text-muted hover:text-text-main'}`}
+                            className={`whitespace-nowrap px-3 py-1.5 rounded-md text-sm font-medium transition-all ${filter === f ? 'bg-glass-black/10 text-text-main shadow-sm' : 'text-text-muted hover:text-text-main'}`}
                         >
                             {f.charAt(0).toUpperCase() + f.slice(1)}
                         </button>

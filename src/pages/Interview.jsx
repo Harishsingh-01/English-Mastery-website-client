@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
-import { MessageSquare, Mic, Send, PlayCircle, Award, RefreshCw, Upload, Clock, FileText, ChevronRight, Plus } from 'lucide-react';
+import { MessageSquare, Mic, Send, PlayCircle, Award, RefreshCw, Upload, Clock, FileText, ChevronRight, Plus, X, Volume2 } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 
 const Interview = () => {
@@ -16,6 +16,7 @@ const Interview = () => {
     const [length, setLength] = useState('short'); // 'short', 'medium', 'long'
     const [stats, setStats] = useState({ questions: 0, totalScore: 0 });
     const [showResumeModal, setShowResumeModal] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
 
     const messagesEndRef = useRef(null);
@@ -193,56 +194,75 @@ const Interview = () => {
             </Helmet>
 
             {/* Sidebar History */}
-            <div className="hidden lg:flex flex-col w-64 glass-panel rounded-2xl p-4 h-full">
-                <button
-                    onClick={() => setShowResumeModal(true)}
-                    className="w-full mb-2 py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all flex items-center justify-center"
-                >
-                    <Plus className="w-4 h-4 mr-2" /> New Interview
-                </button>
-                <button
-                    onClick={() => {
-                        setCurrentSessionId(null);
-                        setMessages([]);
-                        setStats({ questions: 0, totalScore: 0 });
-                        localStorage.removeItem('activeInterviewSession');
-                    }}
-                    className="w-full mb-4 py-2 bg-glass-black/5 text-text-muted font-medium rounded-xl hover:bg-glass-black/10 transition-all flex items-center justify-center text-xs"
-                >
-                    <RefreshCw className="w-3 h-3 mr-2" /> Clear / Close Session
-                </button>
-                <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest mb-4">Past Sessions</h3>
-                <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                    {sessions.map(session => (
-                        <button
-                            key={session._id}
-                            onClick={() => loadSession(session._id)}
-                            className={`w-full text-left p-3 rounded-xl transition-all border ${currentSessionId === session._id
-                                ? 'bg-glass-black/10 border-neon-cyan/50 text-text-main'
-                                : 'hover:bg-glass-black/5 border-transparent text-text-muted'
-                                }`}
-                        >
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="font-medium truncate text-sm">
-                                    {session.title || 'Untitled Session'}
-                                </span>
-                                <ChevronRight className="w-3 h-3 opacity-50" />
-                            </div>
-                            <div className="text-[10px] opacity-60 flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {new Date(session.lastUpdated).toLocaleDateString()}
-                            </div>
-                        </button>
-                    ))}
+            <div className={`fixed inset-y-0 left-0 z-40 transform ${showHistory ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 transition-transform duration-300 ease-in-out w-64 glass-panel rounded-r-2xl lg:rounded-2xl lg:p-4 h-full lg:flex flex-col bg-deep-void lg:bg-transparent shadow-2xl lg:shadow-none`}>
+                <div className="p-4 h-full flex flex-col">
+                    <div className="flex justify-between items-center lg:hidden mb-4">
+                        <h3 className="font-bold text-text-main">History</h3>
+                        <button onClick={() => setShowHistory(false)}><X className="w-5 h-5 text-text-muted" /></button>
+                    </div>
+                    <button
+                        onClick={() => setShowResumeModal(true)}
+                        className="w-full mb-2 py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all flex items-center justify-center"
+                    >
+                        <Plus className="w-4 h-4 mr-2" /> New Interview
+                    </button>
+                    <button
+                        onClick={() => {
+                            setCurrentSessionId(null);
+                            setMessages([]);
+                            setStats({ questions: 0, totalScore: 0 });
+                            localStorage.removeItem('activeInterviewSession');
+                            setShowHistory(false);
+                        }}
+                        className="w-full mb-4 py-2 bg-glass-black/5 text-text-muted font-medium rounded-xl hover:bg-glass-black/10 transition-all flex items-center justify-center text-xs"
+                    >
+                        <RefreshCw className="w-3 h-3 mr-2" /> Clear / Close Session
+                    </button>
+                    <h3 className="text-xs font-bold text-text-muted uppercase tracking-widest mb-4">Past Sessions</h3>
+                    <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                        {sessions.map(session => (
+                            <button
+                                key={session._id}
+                                onClick={() => {
+                                    loadSession(session._id);
+                                    setShowHistory(false);
+                                }}
+                                className={`w-full text-left p-3 rounded-xl transition-all border ${currentSessionId === session._id
+                                    ? 'bg-glass-black/10 border-neon-cyan/50 text-text-main'
+                                    : 'hover:bg-glass-black/5 border-transparent text-text-muted'
+                                    }`}
+                            >
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="font-medium truncate text-sm">
+                                        {session.title || 'Untitled Session'}
+                                    </span>
+                                    <ChevronRight className="w-3 h-3 opacity-50" />
+                                </div>
+                                <div className="text-[10px] opacity-60 flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {new Date(session.lastUpdated).toLocaleDateString()}
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
+
+            {/* Backdrop for mobile sidebar */}
+            {showHistory && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-30 lg:hidden backdrop-blur-sm"
+                    onClick={() => setShowHistory(false)}
+                />
+            )}
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col h-full bg-deep-void/50 rounded-2xl relative overflow-hidden">
                 {/* Header Control Bar */}
                 <div className="glass-panel p-4 flex flex-wrap justify-between items-center rounded-2xl mb-4 z-10">
                     <div className="flex items-center">
-                        <div className="lg:hidden mr-4">
+                        <div className="lg:hidden mr-4 flex space-x-2">
+                            <button onClick={() => setShowHistory(true)} className="p-2 bg-glass-black/20 text-text-muted rounded-lg border border-glass-white/10 hover:text-text-main"><Clock className="w-4 h-4" /></button>
                             <button onClick={() => setShowResumeModal(true)} className="p-2 bg-neon-cyan/20 text-neon-cyan rounded-lg"><Plus className="w-4 h-4" /></button>
                         </div>
                         <div>
@@ -303,6 +323,15 @@ const Interview = () => {
                             {msg.type === 'ai' && (
                                 <div className="max-w-[85%] bg-glass-black/5 border border-glass-white/10 rounded-2xl p-4 rounded-tl-none">
                                     <p className="text-text-main leading-relaxed break-words whitespace-pre-wrap">{msg.text}</p>
+                                    <button
+                                        onClick={() => {
+                                            const utterance = new SpeechSynthesisUtterance(msg.text);
+                                            window.speechSynthesis.speak(utterance);
+                                        }}
+                                        className="mt-2 text-xs text-text-muted hover:text-neon-cyan flex items-center transition-colors"
+                                    >
+                                        <Volume2 className="w-3 h-3 mr-1" /> Listen
+                                    </button>
                                 </div>
                             )}
                             {msg.type === 'user' && (

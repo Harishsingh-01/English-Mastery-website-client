@@ -2,10 +2,11 @@ import { useState, useEffect, useContext } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Send, AlertTriangle, CheckCircle, Info, HelpCircle, X } from 'lucide-react';
+import { Send, AlertTriangle, CheckCircle, Info, HelpCircle, X, Volume2, Layers } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 
 const Dashboard = () => {
+    const { user } = useContext(AuthContext);
     const [usage, setUsage] = useState(null);
     const [sentence, setSentence] = useState('');
     const [result, setResult] = useState(null);
@@ -35,6 +36,7 @@ const Dashboard = () => {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/analyze`, { sentence, strictMode });
             setResult(res.data);
             fetchStats();
+            fetchUsage(); // Refresh usage after analyze
         } catch (err) {
             console.error(err);
             alert('Error analyzing sentence');
@@ -60,17 +62,17 @@ const Dashboard = () => {
 
         const fetchDailyWord = async () => {
             const today = new Date().toISOString().split('T')[0];
-            const cached = localStorage.getItem('daily_word_data');
-            const cachedDate = localStorage.getItem('daily_word_date');
+            const cached = localStorage.getItem('daily_word_data_v2');
+            const cachedDate = localStorage.getItem('daily_word_date_v2');
 
             if (cached && cachedDate === today) {
                 setDailyWord(JSON.parse(cached));
             } else {
                 try {
-                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/daily/word`);
+                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/daily/word?t=${Date.now()}`);
                     setDailyWord(res.data);
-                    localStorage.setItem('daily_word_data', JSON.stringify(res.data));
-                    localStorage.setItem('daily_word_date', today);
+                    localStorage.setItem('daily_word_data_v2', JSON.stringify(res.data));
+                    localStorage.setItem('daily_word_date_v2', today);
                 } catch (err) {
                     console.error("Failed to fetch daily word", err);
                 }
@@ -98,18 +100,42 @@ const Dashboard = () => {
         }
     };
 
+    const saveToDeck = async () => {
+        if (!dailyWord) return;
+        try {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/flashcards`, {
+                word: dailyWord.word,
+                definition: dailyWord.definition,
+                pronunciation: dailyWord.pronunciation,
+                example: dailyWord.examples[0] || ''
+            });
+            alert('Saved to Flashcards!');
+        } catch (err) {
+            console.error(err);
+            alert('Could not save (maybe duplicate?)');
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
             <Helmet>
                 <title>Dashboard | English Mastery</title>
             </Helmet>
-            {/* ... (Header) */}
+
+            <div className="mb-8">
+                <h1 className="text-3xl font-display font-bold text-text-main">
+                    Welcome back, <span className="text-neon-cyan">{user?.name}</span>
+                </h1>
+                <p className="text-text-muted">Ready to practice your English today?</p>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Input Section */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="glass-panel rounded-2xl p-6 relative overflow-hidden group">
-                        {/* ... (Background effects) */}
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                            <Send className="w-32 h-32 text-neon-cyan" />
+                        </div>
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-medium text-neon-cyan uppercase tracking-wide">
                                 Write a sentence to check
@@ -289,7 +315,26 @@ const Dashboard = () => {
 
                     {/* Word of the Day Widget */}
                     {dailyWord && (
-                        <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-neon-cyan/5 to-transparent border border-neon-cyan/20 animate-fade-in">
+                        <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-neon-cyan/5 to-transparent border border-neon-cyan/20 animate-fade-in relative">
+                            <div className="absolute top-4 right-4 flex space-x-2">
+                                <button
+                                    onClick={saveToDeck}
+                                    className="p-1.5 rounded-lg text-neon-cyan hover:bg-neon-cyan/20 transition-colors"
+                                    title="Save to Flashcards"
+                                >
+                                    <Layers className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const utterance = new SpeechSynthesisUtterance(dailyWord.word);
+                                        window.speechSynthesis.speak(utterance);
+                                    }}
+                                    className="p-1.5 rounded-lg text-neon-cyan hover:bg-neon-cyan/20 transition-colors"
+                                    title="Listen to pronunciation"
+                                >
+                                    <Volume2 className="w-5 h-5" />
+                                </button>
+                            </div>
                             <h3 className="text-sm font-bold text-neon-cyan mb-2 uppercase tracking-wider">Word of the Day</h3>
                             <div className="text-2xl font-bold text-text-main mb-1">{dailyWord.word}</div>
                             <div className="text-xs text-text-muted italic mb-2">{dailyWord.pronunciation}</div>

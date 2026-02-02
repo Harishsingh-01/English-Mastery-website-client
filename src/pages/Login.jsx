@@ -1,7 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -10,6 +11,7 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const { name, email, password } = formData;
 
@@ -119,16 +121,36 @@ const Login = () => {
                             />
                         </div>
                         <div>
-                            <input
-                                name="password"
-                                type="password"
-                                required
-                                className="appearance-none rounded-lg relative block w-full px-4 py-3 bg-glass-black/10 border border-glass-white/10 placeholder-text-muted text-text-main focus:outline-none focus:ring-1 focus:ring-neon-cyan focus:border-neon-cyan focus:z-10 sm:text-sm transition-colors"
-                                placeholder="Password"
-                                value={password}
-                                onChange={onChange}
-                            />
+                            <label className="block text-sm font-medium text-text-muted mb-2">Password</label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={onChange}
+                                    className="w-full bg-glass-black/20 border border-glass-white/10 rounded-xl px-4 py-3 text-text-main focus:ring-2 focus:ring-neon-cyan/50 focus:border-neon-cyan outline-none transition-all"
+                                    placeholder="Enter your password"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted hover:text-text-main"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Forgot Password Link - Temporarily Disabled per user request
+                        {isLogin && (
+                            <div className="text-right">
+                                <Link to="/forgot-password" className="text-xs text-neon-cyan hover:underline">
+                                    Forgot Password?
+                                </Link>
+                            </div>
+                        )}
+                        */}
                     </div>
 
                     {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center">{error}</div>}

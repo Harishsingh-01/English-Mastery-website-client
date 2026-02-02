@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
-import { Trash2, FileText, HelpCircle, X, Download } from 'lucide-react';
+import { Trash2, FileText, HelpCircle, X, Download, Volume2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -144,9 +144,18 @@ const Mistakes = () => {
                                     <div className="text-[10px] text-red-400/70 uppercase tracking-widest font-bold mb-1">Mistake</div>
                                     <p className="text-text-main font-medium line-through decoration-red-500/50 decoration-2">{mistake.wrongPhrase}</p>
                                 </div>
-                                <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/10">
+                                <div className="bg-green-500/5 p-3 rounded-lg border border-green-500/10 relative">
                                     <div className="text-[10px] text-green-400/70 uppercase tracking-widest font-bold mb-1">Correction</div>
-                                    <p className="text-green-500 font-medium">{mistake.correctPhrase}</p>
+                                    <p className="text-green-500 font-medium pr-6">{mistake.correctPhrase}</p>
+                                    <button
+                                        onClick={() => {
+                                            const utterance = new SpeechSynthesisUtterance(mistake.correctPhrase);
+                                            window.speechSynthesis.speak(utterance);
+                                        }}
+                                        className="absolute top-3 right-3 text-green-500/50 hover:text-green-500 transition-colors"
+                                    >
+                                        <Volume2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                                 <div className="pt-3 border-t border-glass-white/5">
                                     <p className="text-sm text-text-muted italic mb-3">

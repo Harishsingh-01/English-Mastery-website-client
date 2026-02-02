@@ -8,6 +8,9 @@ import { HelmetProvider } from 'react-helmet-async';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Mistakes from './pages/Mistakes';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import Debate from './pages/Debate';
 
 const PrivateRoute = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
@@ -24,6 +27,8 @@ import RoleplayHub from './pages/RoleplayHub';
 import RoleplaySession from './pages/RoleplaySession';
 import History from './pages/History';
 import AiTutor from './pages/AiTutor';
+import Flashcards from './pages/Flashcards';
+import Profile from './pages/Profile';
 
 function App() {
     return (
@@ -36,14 +41,19 @@ function App() {
                             <div className="pt-20 pb-10"> {/* Add padding for fixed navbar */}
                                 <Routes>
                                     <Route path="/login" element={<Login />} />
+                                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                                    <Route path="/reset-password/:token" element={<ResetPassword />} />
                                     <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
                                     <Route path="/translator" element={<PrivateRoute><Translator /></PrivateRoute>} />
                                     <Route path="/interview" element={<PrivateRoute><Interview /></PrivateRoute>} />
                                     <Route path="/roleplay" element={<PrivateRoute><RoleplayHub /></PrivateRoute>} />
                                     <Route path="/roleplay/:id" element={<PrivateRoute><RoleplaySession /></PrivateRoute>} />
+                                    <Route path="/debate" element={<PrivateRoute><Debate /></PrivateRoute>} />
                                     <Route path="/mistakes" element={<PrivateRoute><Mistakes /></PrivateRoute>} />
                                     <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
                                     <Route path="/tutor" element={<PrivateRoute><AiTutor /></PrivateRoute>} />
+                                    <Route path="/flashcards" element={<PrivateRoute><Flashcards /></PrivateRoute>} />
+                                    <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
                                 </Routes>
 
                                 <div className="mt-10 text-center text-slate-500 text-sm font-medium opacity-50 hover:opacity-100 transition-opacity">

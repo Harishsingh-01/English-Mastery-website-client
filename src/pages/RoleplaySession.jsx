@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Send, ArrowLeft, Mic, User, Bot, Award, AlertCircle } from 'lucide-react';
+import { Send, ArrowLeft, Mic, User, Bot, Award, AlertCircle, Volume2 } from 'lucide-react';
 import axios from 'axios';
 import VoiceInput from '../components/VoiceInput';
 
@@ -149,6 +149,17 @@ const RoleplaySession = () => {
                             </div>
                             <div className={`p-4 rounded-2xl ${msg.role === 'user' ? 'bg-electric-purple/20 border border-electric-purple/30 text-text-main rounded-tr-none' : 'bg-glass-black/10 border border-glass-white/10 text-text-muted rounded-tl-none'}`}>
                                 {msg.content}
+                                {msg.role === 'ai' && (
+                                    <button
+                                        onClick={() => {
+                                            const utterance = new SpeechSynthesisUtterance(msg.content);
+                                            window.speechSynthesis.speak(utterance);
+                                        }}
+                                        className="mt-2 text-xs text-text-muted hover:text-neon-cyan flex items-center transition-colors"
+                                    >
+                                        <Volume2 className="w-3 h-3 mr-1" /> Listen
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
