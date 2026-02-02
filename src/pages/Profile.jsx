@@ -60,9 +60,11 @@ const Profile = () => {
         e.preventDefault();
         setPassMsg('');
         setPassError('');
+        setPassLoading(true); // START LOADING
 
         if (passForm.newPassword !== passForm.confirmPassword) {
             setPassError('New passwords do not match');
+            setPassLoading(false); // STOP LOADING
             return;
         }
 
@@ -75,6 +77,8 @@ const Profile = () => {
             setPassForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {
             setPassError(err.response?.data?.msg || 'Failed to update password');
+        } finally {
+            setPassLoading(false); // STOP LOADING
         }
     };
 

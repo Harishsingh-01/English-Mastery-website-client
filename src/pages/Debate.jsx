@@ -106,10 +106,12 @@ const Debate = () => {
     };
 
     const speak = (text) => {
+        if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         setIsSpeaking(true);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false); // Handle errors
         window.speechSynthesis.speak(utterance);
     };
 
