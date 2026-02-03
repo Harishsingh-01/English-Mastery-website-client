@@ -24,6 +24,7 @@ const Debate = () => {
 
     // Audio State
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [speakingIndex, setSpeakingIndex] = useState(null);
 
     useEffect(() => {
         let interval = null;
@@ -40,16 +41,22 @@ const Debate = () => {
         setLoading(true);
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/debate/start`, {
-                topic: selectedTopic
+                topic: selectedTopic,
+                difficulty
             });
             setSessionId(res.data.sessionId);
             setTopic(res.data.topic);
+
             setMessages([{ role: 'ai', content: res.data.openingStatement }]);
 
-            // Delay speech by 4 seconds to let user read the topic
+            // Dynamic Delay: 0.5s per word, minimum 3s
+            const wordCount = res.data.topic.split(' ').length;
+            const delay = Math.max(3000, wordCount * 500);
+
+            // Delay speech by calculated delay
             setTimeout(() => {
-                speak(res.data.openingStatement);
-            }, 4000);
+                speak(res.data.openingStatement, 0);
+            }, delay);
 
             setGameState('debating');
             startUserTurn();
@@ -85,7 +92,9 @@ const Debate = () => {
 
             const withReply = [...newMsgs, { role: 'ai', content: res.data.reply }];
             setMessages(withReply);
-            speak(res.data.reply);
+
+            // Speak the new reply (last index)
+            speak(res.data.reply, withReply.length - 1);
 
             // Prepare for next turn
             startUserTurn();
@@ -110,13 +119,28 @@ const Debate = () => {
         }
     };
 
-    const speak = (text) => {
+    const speak = (text, index = null) => {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         setIsSpeaking(true);
+        if (index !== null) setSpeakingIndex(index);
+
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false); // Handle errors
+
+        // Adjust speed based on difficulty
+        let rate = 1.0;
+        if (difficulty === 'easy') rate = 0.8;
+        if (difficulty === 'medium') rate = 0.9;
+        utterance.rate = rate;
+
+        utterance.onend = () => {
+            setIsSpeaking(false);
+            setSpeakingIndex(null);
+        };
+        utterance.onerror = () => {
+            setIsSpeaking(false);
+            setSpeakingIndex(null);
+        };
         window.speechSynthesis.speak(utterance);
     };
 
@@ -124,10 +148,13 @@ const Debate = () => {
         if (isSpeaking) {
             window.speechSynthesis.cancel();
             setIsSpeaking(false);
+            setSpeakingIndex(null);
         } else {
             // Replay last AI message
-            const lastAiMsg = messages.slice().reverse().find(m => m.role === 'ai');
-            if (lastAiMsg) speak(lastAiMsg.content);
+            const lastAiMsgIndex = messages.findLastIndex(m => m.role === 'ai');
+            if (lastAiMsgIndex !== -1) {
+                speak(messages[lastAiMsgIndex].content, lastAiMsgIndex);
+            }
         }
     };
 
@@ -244,13 +271,17 @@ const Debate = () => {
                     <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user'
+                                <div className={`max-w-[85%] rounded-2xl p-4 transition-all duration-300 ${msg.role === 'user'
                                     ? 'bg-neon-cyan/10 text-text-main border border-neon-cyan/20 rounded-tr-sm'
-                                    : 'bg-glass-white/5 text-text-main border border-glass-white/10 rounded-tl-sm'
+                                    : `rounded-tl-sm ${speakingIndex === i
+                                        ? 'bg-gradient-to-r from-neon-cyan/20 to-transparent border-neon-cyan text-white shadow-[0_0_15px_rgba(0,243,255,0.3)] scale-[1.02]'
+                                        : 'bg-glass-white/5 text-text-main border border-glass-white/10'}`
                                     }`}>
-                                    <p>{msg.content}</p>
+                                    <p className={speakingIndex === i ? 'font-medium' : ''}>{msg.content}</p>
                                     {msg.role === 'ai' && (
-                                        <button onClick={() => speak(msg.content)} className="mt-2 text-text-muted hover:text-neon-cyan"><Volume2 className="w-4 h-4" /></button>
+                                        <button onClick={() => speak(msg.content, i)} className={`mt-2 hover:text-neon-cyan ${speakingIndex === i ? 'text-neon-cyan animate-pulse' : 'text-text-muted'}`}>
+                                            <Volume2 className="w-4 h-4" />
+                                        </button>
                                     )}
                                 </div>
                             </div>
