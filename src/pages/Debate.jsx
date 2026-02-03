@@ -45,7 +45,12 @@ const Debate = () => {
             setSessionId(res.data.sessionId);
             setTopic(res.data.topic);
             setMessages([{ role: 'ai', content: res.data.openingStatement }]);
-            speak(res.data.openingStatement);
+
+            // Delay speech by 4 seconds to let user read the topic
+            setTimeout(() => {
+                speak(res.data.openingStatement);
+            }, 4000);
+
             setGameState('debating');
             startUserTurn();
         } catch (err) {
