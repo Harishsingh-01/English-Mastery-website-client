@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
-import { MessageSquare, Mic, Send, PlayCircle, Award, RefreshCw, Upload, Clock, FileText, ChevronRight, Plus, X, Volume2 } from 'lucide-react';
+import { MessageSquare, Mic, Send, PlayCircle, Award, RefreshCw, Upload, Clock, FileText, ChevronRight, Plus, X, Volume2, Trash2 } from 'lucide-react';
 import VoiceInput from '../components/VoiceInput';
 
 const Interview = () => {
@@ -15,9 +15,14 @@ const Interview = () => {
     const [loading, setLoading] = useState(false);
     const [length, setLength] = useState('short'); // 'short', 'medium', 'long'
     const [stats, setStats] = useState({ questions: 0, totalScore: 0 });
+    const [sessionState, setSessionState] = useState({ phase: 'intro', mood: 'friendly' });
     const [showResumeModal, setShowResumeModal] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
+
+    // Voice State
+    const [autoSpeak, setAutoSpeak] = useState(true);
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     const messagesEndRef = useRef(null);
 
@@ -26,6 +31,26 @@ const Interview = () => {
         fetchHistory();
     }, []);
 
+    const deleteSession = async (e, id) => {
+        e.stopPropagation(); // Prevent loading the session when clicking delete
+        if (!window.confirm("Are you sure you want to delete this session?")) return;
+
+        try {
+            await axios.delete(`${import.meta.env.VITE_API_URL}/api/interview/session/${id}`);
+            setSessions(prev => prev.filter(s => s._id !== id));
+
+            // If deleting current session, clear it
+            if (currentSessionId === id) {
+                setCurrentSessionId(null);
+                setMessages([]);
+                setStats({ questions: 0, totalScore: 0 });
+                localStorage.removeItem('activeInterviewSession');
+            }
+        } catch (err) {
+            console.error("Failed to delete", err);
+        }
+    };
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
@@ -33,6 +58,36 @@ const Interview = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Auto-TTS Effect
+    useEffect(() => {
+        if (!autoSpeak) return;
+
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.type === 'ai') {
+            // Cancel previous speech
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(lastMsg.text);
+
+            // Optional: Select a specific voice if available (e.g., Google US English)
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => v.name.includes('Google US English') || v.name.includes('Microsoft Zira'));
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            utterance.onstart = () => setIsSpeaking(true);
+            utterance.onend = () => setIsSpeaking(false);
+
+            window.speechSynthesis.speak(utterance);
+        }
+    }, [messages, autoSpeak]);
+
+    // Initial Voice Load fix (Voices load asynchronously)
+    useEffect(() => {
+        window.speechSynthesis.onvoiceschanged = () => {
+            // Force re-render or voice load if needed, mostly handled by browser
+        };
+    }, []);
 
     const fetchHistory = async () => {
         try {
@@ -48,6 +103,11 @@ const Interview = () => {
         try {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interview/session/${id}`);
             setCurrentSessionId(res.data._id);
+            setSessionState({
+                phase: res.data.interviewPhase || 'intro',
+                mood: res.data.interviewerMood || 'friendly'
+            });
+
             // Transform backend messages to UI format
             const uiMessages = res.data.messages.flatMap(m => {
                 const msgs = [{
@@ -102,7 +162,12 @@ const Interview = () => {
             });
             setSessions(prev => [res.data, ...prev]);
             setCurrentSessionId(res.data._id);
-            setMessages([{ type: 'ai', text: 'New session started! ' + (resumeFile ? 'I have read your resume. ' : '') + 'Select a topic to begin.' }]);
+            setSessionState({ phase: 'intro', mood: 'friendly' });
+
+            // AUTO-START: Immediately get the first Intro question
+            // Pass the new ID explicitly because state update is async
+            await getNextQuestion('intro', res.data._id, true);
+
             setStats({ questions: 0, totalScore: 0 });
             setShowResumeModal(false);
             setResumeFile(null);
@@ -114,19 +179,30 @@ const Interview = () => {
         }
     };
 
-    const getNextQuestion = async (type = 'general') => {
+    const getNextQuestion = async (type = 'general', overrideSessionId = null, isFirst = false) => {
         setLoading(true);
+        const targetId = overrideSessionId || currentSessionId;
+        if (!targetId) return;
+
         try {
             // Optimistic update
             // setMessages(prev => [...prev]); 
 
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interview/question`, {
                 type,
-                sessionId: currentSessionId,
+                sessionId: targetId,
                 length
             });
 
-            setMessages(prev => [...prev, { type: 'ai', text: res.data.question }]);
+            // If first question, replace "New session" text or just append
+            if (isFirst) {
+                setMessages([{ type: 'ai', text: res.data.question }]);
+            } else {
+                setMessages(prev => [...prev, { type: 'ai', text: res.data.question }]);
+            }
+
+            if (res.data.interviewPhase) setSessionState(prev => ({ ...prev, phase: res.data.interviewPhase }));
+            if (res.data.interviewerMood) setSessionState(prev => ({ ...prev, mood: res.data.interviewerMood }));
         } catch (err) {
             console.error(err);
         } finally {
@@ -173,6 +249,11 @@ const Interview = () => {
                 questions: prev.questions + 1,
                 totalScore: prev.totalScore + (res.data.score || 0)
             }));
+
+            // Update State
+            if (res.data.interviewPhase) setSessionState(prev => ({ ...prev, phase: res.data.interviewPhase }));
+            if (res.data.interviewerMood) setSessionState(prev => ({ ...prev, mood: res.data.interviewerMood }));
+
         } catch (err) {
             console.error(err);
             setMessages(prev => [...prev, { type: 'system', text: 'Error evaluating answer.' }]);
@@ -185,6 +266,13 @@ const Interview = () => {
         if (score >= 8) return 'text-green-400';
         if (score >= 5) return 'text-yellow-400';
         return 'text-red-400';
+    };
+
+    // Helper for Mood Icon
+    const getMoodIcon = (mood) => {
+        if (mood === 'friendly') return '😃';
+        if (mood === 'strict') return '😠';
+        return '😐';
     };
 
     return (
@@ -227,16 +315,19 @@ const Interview = () => {
                                     loadSession(session._id);
                                     setShowHistory(false);
                                 }}
-                                className={`w-full text-left p-3 rounded-xl transition-all border ${currentSessionId === session._id
+                                className={`w-full text-left p-3 rounded-xl transition-all border group relative ${currentSessionId === session._id
                                     ? 'bg-glass-black/10 border-neon-cyan/50 text-text-main'
                                     : 'hover:bg-glass-black/5 border-transparent text-text-muted'
                                     }`}
                             >
                                 <div className="flex items-center justify-between mb-1">
-                                    <span className="font-medium truncate text-sm">
+                                    <span className="font-medium truncate text-sm max-w-[80%]">
                                         {session.title || 'Untitled Session'}
                                     </span>
-                                    <ChevronRight className="w-3 h-3 opacity-50" />
+                                    <Trash2
+                                        className="w-4 h-4 text-gray-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                                        onClick={(e) => deleteSession(e, session._id)}
+                                    />
                                 </div>
                                 <div className="text-[10px] opacity-60 flex items-center">
                                     <Clock className="w-3 h-3 mr-1" />
@@ -266,17 +357,48 @@ const Interview = () => {
                             <button onClick={() => setShowResumeModal(true)} className="p-2 bg-neon-cyan/20 text-neon-cyan rounded-lg"><Plus className="w-4 h-4" /></button>
                         </div>
                         <div>
-                            <h2 className="font-display font-bold text-text-main text-lg">Interview Coach</h2>
-                            {stats.questions > 0 && (
-                                <span className="text-xs text-text-muted">
-                                    Avg Score: <span className="text-neon-cyan font-bold">{(stats.totalScore / stats.questions).toFixed(1)}</span>/10
+                            <h2 className="font-display font-bold text-text-main text-lg mr-4">Interview Coach</h2>
+
+                            {/* NEW BADGES */}
+                            <div className="flex items-center space-x-2 mt-1">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Phase:</span>
+                                <span className="text-xs bg-neon-cyan/20 px-2 py-0.5 rounded text-neon-cyan border border-neon-cyan/30 capitalize">
+                                    {sessionState.phase}
                                 </span>
-                            )}
+                                <span className="text-gray-600 px-1">|</span>
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">Mood:</span>
+                                <span className={`text-xs px-2 py-0.5 rounded capitalize border ${sessionState.mood === 'friendly' ? 'bg-green-500/10 text-green-400 border-green-500/30' :
+                                    sessionState.mood === 'strict' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                                        'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                                    }`}>
+                                    {getMoodIcon(sessionState.mood)} {sessionState.mood}
+                                </span>
+                            </div>
+
                         </div>
                     </div>
 
                     <div className="flex items-center space-x-2 mt-2 sm:mt-0">
+                        {/* Speaking Indicator */}
+                        {isSpeaking && (
+                            <div className="flex items-center space-x-1 mr-2 px-2 py-1 rounded-full bg-neon-cyan/10 border border-neon-cyan/20">
+                                <div className="w-1 h-3 bg-neon-cyan animate-pulse"></div>
+                                <div className="w-1 h-5 bg-neon-cyan animate-pulse delay-75"></div>
+                                <div className="w-1 h-3 bg-neon-cyan animate-pulse delay-150"></div>
+                                <span className="text-[10px] font-bold text-neon-cyan ml-1">SPEAKING</span>
+                            </div>
+                        )}
+
+                        {/* Controls */}
                         <div className="flex bg-glass-black/20 rounded-lg p-1 border border-glass-white/10">
+                            <button
+                                onClick={() => setAutoSpeak(!autoSpeak)}
+                                className={`p-1.5 rounded-md transition-all ${autoSpeak ? 'bg-neon-cyan/20 text-neon-cyan' : 'text-text-muted hover:text-text-main'}`}
+                                title={autoSpeak ? "Auto-Speak ON" : "Auto-Speak OFF"}
+                            >
+                                <Volume2 className="w-4 h-4" />
+                            </button>
+                            <div className="w-px bg-glass-white/10 mx-1"></div>
                             {['short', 'medium', 'long'].map(l => (
                                 <button
                                     key={l}
@@ -288,11 +410,12 @@ const Interview = () => {
                                 </button>
                             ))}
                         </div>
+                        {/* Auto-Structure: No manual overrides allowed */}
                         {currentSessionId && (
-                            <div className="flex space-x-1">
-                                <button onClick={() => getNextQuestion('general')} className="px-3 py-1.5 bg-glass-black/5 hover:bg-glass-black/10 text-xs text-text-main rounded-lg border border-glass-white/10 transition-colors">General</button>
-                                <button onClick={() => getNextQuestion('hr')} className="px-3 py-1.5 bg-glass-black/5 hover:bg-glass-black/10 text-xs text-text-main rounded-lg border border-glass-white/10 transition-colors">HR</button>
-                                <button onClick={() => getNextQuestion('technical')} className="px-3 py-1.5 bg-glass-black/5 hover:bg-glass-black/10 text-xs text-text-main rounded-lg border border-glass-white/10 transition-colors">Tech</button>
+                            <div className="flex items-center ml-2">
+                                <span className="text-[10px] bg-glass-white/5 border border-glass-white/10 px-2 py-1 rounded text-text-muted">
+                                    AUTO-PROGRESS ON
+                                </span>
                             </div>
                         )}
                     </div>
@@ -394,30 +517,66 @@ const Interview = () => {
 
                 </div>
             </div>
-            {/* Resume Modal */}
+            {/* Resume / Settings Modal */}
             {showResumeModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-glass-black border border-glass-white/10 p-8 rounded-2xl max-w-md w-full shadow-2xl relative backdrop-blur-xl">
+                    <div className="bg-glass-black border border-glass-white/10 p-8 rounded-2xl max-w-lg w-full shadow-2xl relative backdrop-blur-xl">
                         <button onClick={() => setShowResumeModal(false)} className="absolute top-4 right-4 text-text-muted hover:text-text-main">✕</button>
-                        <h3 className="text-2xl font-display font-bold text-text-main mb-2">Start New Session</h3>
-                        <p className="text-text-muted mb-6 text-sm">Upload your resume for personalized questions (PDF) or skip to start generic.</p>
+                        <h3 className="text-2xl font-display font-bold text-text-main mb-2">Configure Interview</h3>
+                        <p className="text-text-muted mb-6 text-sm">Customize your practice session.</p>
 
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-glass-white/10 rounded-xl cursor-pointer hover:border-neon-cyan/50 hover:bg-glass-black/5 transition-all mb-6 group">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <Upload className="w-8 h-8 text-text-muted mb-2 group-hover:text-neon-cyan transition-colors" />
-                                <p className="text-sm text-text-muted group-hover:text-text-main">{resumeFile ? resumeFile.name : 'Click to upload PDF'}</p>
+                        {/* Interview Type Selection */}
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">Interview Focus</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {['general', 'technical', 'hr', 'behavioral', 'hybrid'].map(type => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setSessionState(prev => ({ ...prev, tempType: type }))}
+                                        className={`py-2 px-3 rounded-lg text-sm font-medium capitalize border transition-all ${(sessionState.tempType || 'general') === type
+                                                ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
+                                                : 'bg-glass-black/20 border-glass-white/10 text-text-muted hover:border-glass-white/30'
+                                            }`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
                             </div>
-                            <input type="file" className="hidden" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} />
-                        </label>
-
-                        <div className="flex space-x-3">
-                            <button
-                                onClick={startNewSession}
-                                className="flex-1 py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all"
-                            >
-                                {resumeFile ? 'Start with Resume' : 'Start without Resume'}
-                            </button>
                         </div>
+
+                        {/* Resume Upload */}
+                        <div className="mb-4">
+                            <label className="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">Context Source</label>
+                            <div className="space-y-4">
+                                <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-xl cursor-pointer transition-all group ${resumeFile ? 'border-neon-cyan bg-neon-cyan/5' : 'border-glass-white/10 hover:border-neon-cyan/50 hover:bg-glass-black/5'}`}>
+                                    <div className="flex flex-col items-center justify-center pt-2 pb-3">
+                                        <Upload className={`w-6 h-6 mb-2 transition-colors ${resumeFile ? 'text-neon-cyan' : 'text-text-muted group-hover:text-neon-cyan'}`} />
+                                        <p className="text-xs text-text-muted group-hover:text-text-main">{resumeFile ? resumeFile.name : 'Upload Resume (PDF)'}</p>
+                                    </div>
+                                    <input type="file" className="hidden" accept=".pdf" onChange={(e) => setResumeFile(e.target.files[0])} />
+                                </label>
+
+                                {/* OR Divider */}
+                                <div className="flex items-center justify-center text-xs text-text-muted">
+                                    <span className="bg-deep-void px-2">OR ENTER MANUALLY</span>
+                                </div>
+
+                                {/* Manual Context Input */}
+                                <textarea
+                                    className="w-full bg-glass-black/20 border border-glass-white/10 rounded-xl p-3 text-sm text-text-main focus:border-neon-cyan outline-none"
+                                    rows="3"
+                                    placeholder="Paste your Skills, Tech Stack, or Project details here..."
+                                    onChange={(e) => setSessionState(prev => ({ ...prev, tempContext: e.target.value }))}
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => startNewSession(sessionState.tempType, sessionState.tempContext)}
+                            className="w-full py-3 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all shadow-[0_0_20px_rgba(0,243,255,0.3)]"
+                        >
+                            Start Interview
+                        </button>
                     </div>
                 </div>
             )}

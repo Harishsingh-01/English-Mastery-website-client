@@ -5,15 +5,34 @@ import { Mic, Send, Clock, Play, AlertCircle, Award, Volume2, StopCircle } from 
 import VoiceInput from '../components/VoiceInput';
 
 const Debate = () => {
-    const [gameState, setGameState] = useState('setup'); // setup, debating, analysis
+    const [gameState, setGameState] = useState('setup'); // setup, stance-selection, debating, analysis
     const [topic, setTopic] = useState('');
-    const [difficulty, setDifficulty] = useState('easy'); // Default to easy per request
+    const [difficulty, setDifficulty] = useState('easy');
     const [customTopic, setCustomTopic] = useState('');
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sessionId, setSessionId] = useState(null);
     const [turnFeedback, setTurnFeedback] = useState(null);
     const [finalStats, setFinalStats] = useState(null);
+    const [sides, setSides] = useState([]); // [SideA, SideB]
+    const [userStance, setUserStance] = useState(null);
+    const [argumentHistory, setArgumentHistory] = useState([]);
+    const [aiStrategy, setAiStrategy] = useState({
+        mode: 'neutral', // attack | defend | pressure | summarize
+        aggression: 0.3,
+        depth: 1
+    });
+
+    // Update AI Strategy when difficulty changes
+    useEffect(() => {
+        if (difficulty === 'easy') {
+            setAiStrategy({ mode: 'defend', aggression: 0.2, depth: 1 });
+        } else if (difficulty === 'medium') {
+            setAiStrategy({ mode: 'balanced', aggression: 0.5, depth: 2 });
+        } else if (difficulty === 'hard') {
+            setAiStrategy({ mode: 'attack', aggression: 0.9, depth: 3 });
+        }
+    }, [difficulty]);
 
     // Timer State
     const [timeLeft, setTimeLeft] = useState(60);
@@ -37,23 +56,42 @@ const Debate = () => {
         return () => clearInterval(interval);
     }, [timerActive, timeLeft]);
 
-    const startDebate = async (selectedTopic = null) => {
+    const initDebate = async (selectedTopic = null) => {
         setLoading(true);
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/debate/start`, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/debate/init`, {
                 topic: selectedTopic,
                 difficulty
             });
-            setSessionId(res.data.sessionId);
             setTopic(res.data.topic);
+            setSides(res.data.sides);
+            setGameState('stance-selection');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to initialize debate');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const confirmStance = async (selectedStance) => {
+        setLoading(true);
+        setUserStance(selectedStance);
+        setArgumentHistory([]);
+
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/debate/start`, {
+                topic,
+                difficulty,
+                userStance: selectedStance
+            });
+            setSessionId(res.data.sessionId);
 
             setMessages([{ role: 'ai', content: res.data.openingStatement }]);
 
-            // Dynamic Delay: 0.5s per word, minimum 3s
-            const wordCount = res.data.topic.split(' ').length;
+            const wordCount = topic.split(' ').length;
             const delay = Math.max(3000, wordCount * 500);
 
-            // Delay speech by calculated delay
             setTimeout(() => {
                 speak(res.data.openingStatement, 0);
             }, delay);
@@ -61,6 +99,7 @@ const Debate = () => {
             setGameState('debating');
             startUserTurn();
         } catch (err) {
+            console.error(err);
             alert('Failed to start debate');
         } finally {
             setLoading(false);
@@ -78,20 +117,68 @@ const Debate = () => {
         setTimerActive(false);
         setLoading(true);
 
+        // 1. Structured Memory Update (User)
+        const userArg = {
+            role: 'user',
+            text: input,
+            stance: userStance,
+            timeLeft,
+            timestamp: Date.now()
+        };
+        const updatedHistory = [...argumentHistory, userArg];
+        setArgumentHistory(updatedHistory);
+
         // Optimistic UI
         const newMsgs = [...messages, { role: 'user', content: input }];
         setMessages(newMsgs);
 
+        // AI INTERRUPT LOGIC (Hard Mode)
+        if (difficulty === 'hard' && input.length < 30) {
+            const interruptMsg = "That point is underdeveloped. Can you justify it?";
+
+            setMessages(prev => [...prev, { role: 'ai', content: interruptMsg }]);
+
+            setArgumentHistory(prev => [
+                ...prev,
+                { role: 'ai', text: interruptMsg, type: 'interrupt', timestamp: Date.now() }
+            ]);
+
+            setTurnFeedback({
+                feedback: "AI interrupted due to weak argument.",
+                coherenceScore: 20,
+                strengthScore: 15
+            });
+
+            speak(interruptMsg);
+            startUserTurn();
+            setLoading(false);
+            return;
+        }
+
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/debate/turn`, {
                 sessionId,
-                message: input
+                message: input,
+                argumentHistory: updatedHistory,
+                difficulty,
+                strategy: aiStrategy
             });
 
             setTurnFeedback(res.data.feedback);
 
             const withReply = [...newMsgs, { role: 'ai', content: res.data.reply }];
             setMessages(withReply);
+
+            // 2. Structured Memory Update (AI)
+            setArgumentHistory(prev => [
+                ...prev,
+                {
+                    role: 'ai',
+                    text: res.data.reply,
+                    stance: 'opponent',
+                    timestamp: Date.now()
+                }
+            ]);
 
             // Speak the new reply (last index)
             speak(res.data.reply, withReply.length - 1);
@@ -197,7 +284,7 @@ const Debate = () => {
                             {['Cats vs Dogs', 'Summer vs Winter', 'City Life vs Village', 'Books vs Movies'].map((t) => (
                                 <button
                                     key={t}
-                                    onClick={() => startDebate(t)}
+                                    onClick={() => initDebate(t)}
                                     disabled={loading}
                                     className="p-3 bg-glass-white/5 hover:bg-glass-white/10 border border-glass-white/5 hover:border-neon-cyan/30 rounded-xl transition-all text-text-muted hover:text-neon-cyan truncate"
                                 >
@@ -212,7 +299,7 @@ const Debate = () => {
                         </div>
 
                         <button
-                            onClick={() => startDebate()}
+                            onClick={() => initDebate()}
                             disabled={loading}
                             className="w-full py-4 bg-neon-cyan text-black font-bold rounded-xl hover:bg-neon-cyan/90 transition-all text-lg shadow-[0_0_20px_rgba(0,243,255,0.4)] hover:scale-105 transform"
                         >
@@ -227,13 +314,47 @@ const Debate = () => {
                                 className="flex-1 bg-glass-black/20 border border-glass-white/10 rounded-xl px-4 focus:border-neon-cyan outline-none"
                             />
                             <button
-                                onClick={() => startDebate(customTopic)}
+                                onClick={() => initDebate(customTopic)}
                                 disabled={!customTopic.trim() || loading}
                                 className="px-4 bg-glass-white/10 hover:bg-glass-white/20 rounded-xl font-bold disabled:opacity-50"
                             >
                                 <Play className="w-5 h-5" />
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* STANCE SELECTION SCREEN */}
+            {gameState === 'stance-selection' && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8 glass-panel p-8 rounded-3xl border border-glass-white/10 animate-fade-in">
+                    <div>
+                        <h2 className="text-xl text-text-muted uppercase mb-2">Topic Selected</h2>
+                        <h1 className="text-3xl md:text-4xl font-display font-bold text-neon-cyan mb-6">{topic}</h1>
+                        <p className="text-lg text-text-main mb-8">Choose your side to start the debate:</p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg mx-auto">
+                            {sides.map((side, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => confirmStance(side)}
+                                    disabled={loading}
+                                    className={`p-6 rounded-2xl border transition-all transform hover:scale-105 ${idx === 0
+                                        ? 'bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20'
+                                        : 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+                                        }`}
+                                >
+                                    <span className="text-xl font-bold block mb-1">{side}</span>
+                                    <span className="text-xs opacity-70 uppercase">I argue for this</span>
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setGameState('setup')}
+                            className="mt-8 text-text-muted hover:text-white underline text-sm"
+                        >
+                            Cancel & Go Back
+                        </button>
                     </div>
                 </div>
             )}
@@ -290,9 +411,28 @@ const Debate = () => {
 
                     {/* Live Feedback Toast */}
                     {turnFeedback && (
-                        <div className="bg-electric-purple/10 border border-electric-purple/30 p-3 rounded-lg text-sm text-electric-purple flex items-center justify-between animate-slide-up">
-                            <span><strong className="mr-2">Instant Feedback:</strong> {turnFeedback.feedback}</span>
-                            <span className="font-bold bg-electric-purple/20 px-2 py-0.5 rounded text-xs">Score: {turnFeedback.coherenceScore}/10</span>
+                        <div className="bg-glass-black/80 border border-electric-purple/30 p-4 rounded-xl text-sm animate-slide-up shadow-2xl backdrop-blur-md">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-electric-purple font-bold uppercase text-xs tracking-wider">Analysis</span>
+                                <div className="flex gap-2">
+                                    <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-xs font-bold">Logic: {turnFeedback.coherenceScore}%</span>
+                                    <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-xs font-bold">Strength: {turnFeedback.strengthScore}%</span>
+                                </div>
+                            </div>
+
+                            <p className="text-white mb-2 font-medium">{turnFeedback.feedback}</p>
+
+                            {turnFeedback.fallacies && turnFeedback.fallacies.length > 0 && (
+                                <div className="bg-red-500/10 border border-red-500/20 p-2 rounded-lg mt-2">
+                                    <div className="flex items-center text-red-400 text-xs font-bold mb-1">
+                                        <AlertCircle className="w-3 h-3 mr-1" />
+                                        Logical Fallacy Detected:
+                                    </div>
+                                    <div className="text-red-300 text-sm mt-1">
+                                        {turnFeedback.fallacies.join(' ')}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
