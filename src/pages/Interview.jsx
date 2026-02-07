@@ -15,7 +15,7 @@ const Interview = () => {
     const [loading, setLoading] = useState(false);
     const [length, setLength] = useState('short'); // 'short', 'medium', 'long'
     const [stats, setStats] = useState({ questions: 0, totalScore: 0 });
-    const [sessionState, setSessionState] = useState({ phase: 'intro', mood: 'friendly' });
+    const [sessionState, setSessionState] = useState({ phase: 'intro', mood: 'friendly', tempType: 'general', tempContext: '' });
     const [showResumeModal, setShowResumeModal] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [resumeFile, setResumeFile] = useState(null);
@@ -149,12 +149,14 @@ const Interview = () => {
         }
     }, []);
 
-    const startNewSession = async () => {
+    const startNewSession = async (type = 'general', context = '') => {
         setLoading(true);
         const formData = new FormData();
         if (resumeFile) {
             formData.append('resume', resumeFile);
         }
+        formData.append('interviewType', type);
+        formData.append('manualContext', context);
 
         try {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interview/start`, formData, {
@@ -162,7 +164,7 @@ const Interview = () => {
             });
             setSessions(prev => [res.data, ...prev]);
             setCurrentSessionId(res.data._id);
-            setSessionState({ phase: 'intro', mood: 'friendly' });
+            setSessionState({ phase: 'intro', mood: 'friendly', tempType: type, tempContext: context });
 
             // AUTO-START: Immediately get the first Intro question
             // Pass the new ID explicitly because state update is async
@@ -534,8 +536,8 @@ const Interview = () => {
                                         key={type}
                                         onClick={() => setSessionState(prev => ({ ...prev, tempType: type }))}
                                         className={`py-2 px-3 rounded-lg text-sm font-medium capitalize border transition-all ${(sessionState.tempType || 'general') === type
-                                                ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
-                                                : 'bg-glass-black/20 border-glass-white/10 text-text-muted hover:border-glass-white/30'
+                                            ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
+                                            : 'bg-glass-black/20 border-glass-white/10 text-text-muted hover:border-glass-white/30'
                                             }`}
                                     >
                                         {type}

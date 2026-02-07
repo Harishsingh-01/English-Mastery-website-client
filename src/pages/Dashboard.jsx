@@ -7,7 +7,6 @@ import VoiceInput from '../components/VoiceInput';
 
 const Dashboard = () => {
     const { user } = useContext(AuthContext);
-    const [usage, setUsage] = useState(null);
     const [sentence, setSentence] = useState('');
     const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -17,14 +16,7 @@ const Dashboard = () => {
     const [dailyWord, setDailyWord] = useState(null);
     const [strictMode, setStrictMode] = useState(false);
 
-    const fetchUsage = async () => {
-        try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/usage`);
-            setUsage(res.data);
-        } catch (err) {
-            console.error('Failed to fetch usage', err);
-        }
-    };
+
 
     const handleAnalyze = async (e) => {
         e.preventDefault();
@@ -36,7 +28,6 @@ const Dashboard = () => {
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/analyze`, { sentence, strictMode });
             setResult(res.data);
             fetchStats();
-            fetchUsage(); // Refresh usage after analyze
         } catch (err) {
             console.error(err);
             alert('Error analyzing sentence');
@@ -56,7 +47,6 @@ const Dashboard = () => {
 
     useEffect(() => {
         fetchStats();
-        fetchUsage();
         const saved = localStorage.getItem('dashboard_sentence');
         if (saved) setSentence(saved);
 
@@ -264,23 +254,7 @@ const Dashboard = () => {
 
                 {/* Sidebar Stats */}
                 <div className="space-y-6">
-                    {/* Usage Meter */}
-                    {usage && (
-                        <div className="glass-panel rounded-2xl p-6 relative overflow-hidden group">
-                            <h3 className="text-lg font-display font-bold text-text-main mb-2">Daily Quota</h3>
-                            <div className="flex justify-between text-sm text-text-muted mb-2">
-                                <span>Requests Used</span>
-                                <span>{usage.count} / 100</span>
-                            </div>
-                            <div className="w-full bg-white/10 rounded-full h-2.5">
-                                <div
-                                    className={`h-2.5 rounded-full transition-all duration-500 ${usage.count > 45 ? 'bg-red-500' : 'bg-neon-cyan'}`}
-                                    style={{ width: `${Math.min((usage.count / 100) * 100, 100)}%` }}
-                                ></div>
-                            </div>
-                            <p className="text-xs text-text-muted mt-2 text-right">Resets daily</p>
-                        </div>
-                    )}
+
 
                     <div className="glass-panel rounded-2xl p-6 relative overflow-hidden">
                         <div className="absolute -top-10 -right-10 w-32 h-32 bg-electric-purple/10 rounded-full blur-2xl pointer-events-none"></div>

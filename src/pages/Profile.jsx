@@ -6,7 +6,7 @@ import { User, Mail, Calendar, BarChart, Settings, LogOut, CheckCircle, Brain, B
 
 const Profile = () => {
     const { user, logout } = useContext(AuthContext);
-    const [stats, setStats] = useState({ flashcards: 0, mistakes: 0, usage: 0 });
+    const [stats, setStats] = useState({ flashcards: 0, mistakes: 0 });
     const [loading, setLoading] = useState(true);
 
     // Edit Name State
@@ -30,12 +30,10 @@ const Profile = () => {
             try {
                 const cardRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/flashcards`);
                 const mistRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/mistakes`);
-                const usageRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/usage`);
 
                 setStats({
                     flashcards: cardRes.data.length,
-                    mistakes: mistRes.data.length,
-                    usage: usageRes.data.count
+                    mistakes: mistRes.data.length
                 });
             } catch (err) {
                 console.error(err);
@@ -123,8 +121,8 @@ const Profile = () => {
                 </button>
             </div>
 
-            {/* Stats Grid - Same as before */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="glass-panel p-6 rounded-2xl border border-glass-white/5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Brain className="w-16 h-16 text-neon-cyan" />
@@ -132,13 +130,7 @@ const Profile = () => {
                     <div className="text-3xl font-bold text-neon-cyan mb-1">{stats.flashcards}</div>
                     <div className="text-xs text-text-muted uppercase tracking-wider font-bold">Vocabulary Saved</div>
                 </div>
-                <div className="glass-panel p-6 rounded-2xl border border-glass-white/5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                        <CheckCircle className="w-16 h-16 text-green-400" />
-                    </div>
-                    <div className="text-3xl font-bold text-green-400 mb-1">{stats.usage}</div>
-                    <div className="text-xs text-text-muted uppercase tracking-wider font-bold">Checks Used</div>
-                </div>
+
                 <div className="glass-panel p-6 rounded-2xl border border-glass-white/5 relative overflow-hidden group hover:-translate-y-1 transition-transform">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                         <BookOpen className="w-16 h-16 text-yellow-400" />
