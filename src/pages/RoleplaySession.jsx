@@ -41,11 +41,20 @@ const RoleplaySession = () => {
         try {
             // Send only last 6 messages context
             const context = messages.slice(-6);
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/chat`, {
+
+            // Prepare request body
+            const requestBody = {
                 message: userMsg.content,
                 history: context,
                 scenario: id
-            });
+            };
+
+            // If AI-generated scenario, include config
+            if (id === 'ai_generated' && location.state?.config) {
+                requestBody.scenarioConfig = location.state.config;
+            }
+
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/roleplay/chat`, requestBody);
 
             setMessages(prev => [...prev, { role: 'ai', content: res.data.response }]);
         } catch (err) {
