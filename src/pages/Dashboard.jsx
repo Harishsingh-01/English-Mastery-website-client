@@ -180,6 +180,37 @@ const Dashboard = () => {
                                 )}
                             </h2>
 
+                            {/* Score Display */}
+                            {result.score !== undefined && (
+                                <div className="mb-6 p-5 bg-gradient-to-r from-electric-purple/5 to-neon-cyan/5 rounded-xl border border-glass-white/10">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-sm font-bold text-text-main uppercase tracking-wider">Grammar Score</span>
+                                        <span className={`text-3xl font-bold ${result.score >= 8 ? 'text-green-400' :
+                                                result.score >= 5 ? 'text-yellow-400' :
+                                                    'text-red-400'
+                                            }`}>
+                                            {result.score}/10
+                                        </span>
+                                    </div>
+                                    {/* Progress Bar */}
+                                    <div className="w-full h-4 bg-glass-black/20 rounded-full overflow-hidden border border-glass-white/10">
+                                        <div
+                                            className={`h-full transition-all duration-500 ease-out rounded-full ${result.score >= 8 ? 'bg-gradient-to-r from-green-500 to-green-400' :
+                                                    result.score >= 5 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400' :
+                                                        'bg-gradient-to-r from-red-500 to-red-400'
+                                                }`}
+                                            style={{ width: `${result.score * 10}%` }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-text-muted mt-2 text-center">
+                                        {result.score === 10 ? 'Perfect! No mistakes found.' :
+                                            result.score >= 8 ? 'Excellent! Just a few minor issues.' :
+                                                result.score >= 5 ? 'Good job! Some improvements needed.' :
+                                                    'Keep practicing! Several mistakes to work on.'}
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="space-y-6">
                                 <div className="p-5 bg-glass-black/5 rounded-xl border border-glass-white/10">
                                     <div className="text-xs text-text-muted uppercase tracking-wider mb-2">Corrected Version</div>
